@@ -6,8 +6,9 @@
 //                 bridged. Two angled slots for the wing halves (dihedral +
 //                 incidence), a through-slot for the tailplane, a nose
 //                 ballast pocket and a CG notch on top.
-//   * wing x2   - thin flat skin with two spanwise spars on top, printed
-//                 flat. Root tab plugs into the fuselage. Left half is a
+//   * wing x2   - flat-bottomed cambered airfoil section (NACA-style upper
+//                 surface, 6% thick), printed flat side down with sparse
+//                 infill. Root tab plugs into the fuselage. Left half is a
 //                 mirror of the right.
 //   * tailplane - flat plate, slides through the boom.
 //
@@ -16,27 +17,26 @@
 part = "plate";
 
 // ---- Wing -----------------------------------------------------------------
-half_span   = 125;     // per side, excluding the root tab
-root_chord  = 45;
+half_span   = 130;     // per side, excluding the root tab
+root_chord  = 48;
 tip_chord   = 30;
 tip_round   = 5;       // corner radius at the tip
-skin_t      = 0.45;    // wing skin thickness (3 layers at 0.15 mm)
-spar_w      = 1.2;     // spanwise spars on the top surface
-spar_h      = 1.0;
-spar_at     = [0.22, 0.55];   // spar positions as fraction of root chord
+foil_t      = 0.06;    // section thickness / chord (flat bottom, all camber on top)
+foil_base   = 0.3;     // minimum thickness at the leading and trailing edges
+foil_n      = 40;      // points along the upper surface
 tab_len     = 4.0;     // root tab that goes into the fuselage (per side)
 tab_x0      = 5;       // tab runs from this chord station ...
 tab_x1      = 27;      // ... to this one
 tab_t       = 0.75;    // tab thickness (5 layers at 0.15 mm)
 dihedral    = 6;       // degrees per side
-incidence   = 3;       // wing angle relative to fuselage, degrees (LE up)
+incidence   = 2;       // wing angle relative to fuselage, degrees (LE up)
 slot_clear  = 0.25;    // extra slot thickness / length for a push fit
 
 // ---- Fuselage -------------------------------------------------------------
 x_le        = 50;      // wing leading edge position from the nose
 pod_len     = 80;      // solid nose pod, nose to where it starts tapering
 pod_w       = 8;
-pod_h       = 9;
+pod_h       = 10;
 boom_w      = 1.6;
 boom_h0     = 4.5;     // boom height where it leaves the pod
 boom_h1     = 3;       // boom height at the tail
@@ -72,15 +72,28 @@ module rounded_planform(root, tip, span, r) {
         polygon([[0, 0], [root, 0], [tip, span], [0, span]]);
 }
 
+// NACA 4-digit thickness distribution (closed trailing edge): full thickness
+// as a fraction of chord at x/c = u, peaking at t when u = 0.3.
+function naca_t(u, t) = 10 * t * (0.2969 * sqrt(u) - 0.1260 * u - 0.3516 * u * u
+                                   + 0.2843 * pow(u, 3) - 0.1036 * pow(u, 4));
+
+// Flat-bottomed section for chord c: bottom on y = 0, curved top.
+module foil_section(c) {
+    polygon(concat(
+        [[0, 0], [c, 0]],
+        [for (i = [foil_n : -1 : 0]) let(u = i / foil_n) [u * c, foil_base + c * naca_t(u, foil_t)]]));
+}
+
 // Right wing half, flat side down, root at y = 0, LE at x = 0.
 module wing_half() {
-    linear_extrude(skin_t) rounded_planform(root_chord, tip_chord, half_span, tip_round);
-    // spars: follow the local chord so they stay clear of the tip rounding
-    for (f = spar_at)
-        hull() {
-            translate([f * root_chord - spar_w / 2, 0, 0]) cube([spar_w, 0.01, skin_t + spar_h]);
-            translate([f * tip_chord - spar_w / 2, half_span - tip_round - 1, 0]) cube([spar_w, 0.01, skin_t + spar_h]);
-        }
+    intersection() {
+        // loft root -> tip section (scaled about the LE / bottom), span along +y
+        mirror([0, 1, 0]) rotate([90, 0, 0])
+            linear_extrude(height = half_span, scale = tip_chord / root_chord)
+                foil_section(root_chord);
+        // rounded tip
+        linear_extrude(20) rounded_planform(root_chord, tip_chord, half_span, tip_round);
+    }
     // root tab
     translate([tab_x0, -tab_len, 0]) cube([tab_x1 - tab_x0, tab_len + 0.5, tab_t]);
 }
@@ -158,17 +171,29 @@ module exploded() {
     translate([30, boom_y - tail_span / 2, 2.2 + slot_clear / 2]) tailplane();
 }
 
+// Wings and tailplane only (they use different slicer settings to the fuselage).
+module plate_wings() {
+    translate([5, 48, 0])    rotate([0, 0, -90]) wing_half();                   // right wing, y 0..48
+    translate([136, -8, 0])  rotate([0, 0, -90]) mirror([0, 1, 0]) wing_half(); // left wing, y -56..-8
+    translate([142, 48, 0])  rotate([0, 0, -90]) tailplane();                   // y 28..48
+}
+
 module plate() {
     // Everything spanwise along X so the whole set fits in ~180 x 120 mm.
     fuselage_print();                                                            // y 0..25.5
-    translate([5, 78, 0])    rotate([0, 0, -90]) wing_half();                   // right wing, y 33..78
-    translate([131, -8, 0])  rotate([0, 0, -90]) mirror([0, 1, 0]) wing_half(); // left wing, y -53..-8
-    translate([142, 78, 0])  rotate([0, 0, -90]) tailplane();                   // y 58..78
+    translate([5, 81, 0])    rotate([0, 0, -90]) wing_half();                   // right wing, y 33..81
+    translate([136, -8, 0])  rotate([0, 0, -90]) mirror([0, 1, 0]) wing_half(); // left wing, y -56..-8
+    translate([142, 81, 0])  rotate([0, 0, -90]) tailplane();                   // y 61..81
 }
 
 if (part == "plate")          plate();
 else if (part == "assembled") assembled();
 else if (part == "exploded")  exploded();
+else if (part == "plate_wings") plate_wings();
+// assembled-position single parts, for the balance estimate in scripts/glider_cg.py
+else if (part == "asm_fuselage") fuselage();
+else if (part == "asm_wings") { place_wing(1) wing_half(); place_wing(-1) mirror([0, 1, 0]) wing_half(); }
+else if (part == "asm_tail")  translate([tail_x, boom_y - tail_span / 2, 2.2 + slot_clear / 2]) tailplane();
 else if (part == "fuselage")  fuselage_print();
 else if (part == "wing_r")    wing_half();
 else if (part == "wing_l")    mirror([0, 1, 0]) wing_half();

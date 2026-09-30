@@ -2,24 +2,32 @@
 
 ![Assembled](images/glider.png)
 
-Source: `scad/glider/glider.scad` · Exports: `exports/glider_plate.stl` (all parts
-laid out for printing) plus `glider_fuselage.stl`, `glider_wing_r.stl`,
-`glider_wing_l.stl`, `glider_tail.stl`.
+Source: `scad/glider/glider.scad` · Exports: `exports/glider_fuselage.stl` and
+`exports/glider_plate_wings.stl` (wings + tailplane) are the two prints;
+`glider_plate.stl` has everything on one plate, and each part is also
+exported on its own.
 
 | Spec               | Value                                   |
 |--------------------|-----------------------------------------|
-| Wingspan           | 258 mm (2 × 125 mm halves + fuselage)    |
+| Wingspan           | 268 mm (2 × 130 mm halves + fuselage)    |
 | Length             | 142 mm                                   |
-| Wing area          | ~94 cm², mean chord 38 mm                |
-| Mass (100% infill) | ~15 g → wing loading ~0.16 g/cm²         |
+| Wing area          | ~104 cm², mean chord 40 mm               |
+| Wing section       | flat-bottomed, NACA-style top, 6% thick (max at 30% chord) |
+| Mass (as sliced)   | ~20 g → wing loading ~0.19 g/cm²         |
 | Dihedral           | 6° per side                              |
-| Wing incidence     | +3° relative to the tailplane            |
+| Wing incidence     | +2° relative to the tailplane            |
 | Design CG          | 32% of mean chord, marked by the notch on top of the fuselage |
 
-Version 2. The first version (59 cm², 17 g, 0.29 g/cm²) flew like a dart:
-far too much wing loading for a flat-plate wing. V2 has 60% more wing area
-built as a 0.45 mm skin with two spanwise spars instead of a solid wedge, a
-lighter tail and boom, a degree more incidence and the CG 4% further back.
+![Wing section at the root](images/glider_section.png)
+
+**Version 3: cambered wing.** V1 (59 cm² flat wedge wing, 17 g, 0.29 g/cm²)
+flew like a dart. V2 (flat 0.45 mm skin with spars, 94 cm²) was never printed.
+V3 replaces the flat plate with a proper cambered section: flat bottom so it
+prints flat, all the camber in the curved top surface, which the slicer's
+sparse infill supports. The box section is far stiffer than a plate, so the
+spars are gone. A cambered section lifts about twice as hard as a flat plate
+at the same speed, so despite weighing a little more than V2 it should glide
+much slower and flatter.
 
 ## How it goes together
 
@@ -30,11 +38,11 @@ Four parts, push-fit, no glue needed (a dot of CA on the tabs is optional).
 Fuselage upright: fin up, flat edge down, round end forward.
 
 1. Slide the tailplane through the slot in the boom and centre it on the boom.
-2. Wing halves. Each is a thin plate with two ridges (spars) on one face.
-   Orientation:
-   - **spars up**, flat face down;
-   - **the edge nearest a spar is the leading edge**: spars sit at 22% and
-     55% of the chord, so the wider gap is at the back;
+2. Wing halves. Each is an airfoil: flat on one face, curved on the other,
+   thickest about a third of the way back from the rounded edge. Orientation:
+   - **curved face up**, flat face down;
+   - **thick, rounded edge forward** (leading edge); the thin edge is the
+     trailing edge;
    - the tab is 5 mm behind the leading edge. It only fits the slot one way
      lengthwise;
    - push it in until the root touches the fuselage. Tips should angle **up**
@@ -46,28 +54,37 @@ Fuselage upright: fin up, flat edge down, round end forward.
    notch, ~12 mm behind the wing's leading edge. Slightly nose-heavy is fine,
    tail-heavy is not.
 
-Expected masses and balance points (100% infill PLA, from the model):
+Expected masses and balance point (from the model and the slicer settings above):
 
 | Part         | Mass  | Balance point, from the nose            |
 |--------------|-------|-----------------------------------------|
-| Fuselage     | 8.2 g |                                         |
-| Wing half    | 3.0 g | (per side)                              |
+| Fuselage     | 9.0 g |                                         |
+| Wing half    | ~5 g  | (per side, at 10% infill / 2+2 skins)   |
 | Tailplane    | 0.8 g |                                         |
-| **Complete** | 15.0 g| **62 mm, at the notch**                  |
+| **Complete** | ~20 g | **62 mm, at the notch**                  |
 
 ## Print settings (P2S)
 
-- Import `glider_plate.stl`. Bambu Studio will ask to split it into objects; say yes.
-- **Fuselage prints lying on its side**, as laid out (fin flat on the plate).
-  This keeps both slot widths in-plane, where the printer is accurate. An
-  earlier upright version bridged the slots and they closed up. The boom and
-  fin are flush with the bed-side face, so the tail sits ~3.5 mm to one side
-  of the wing centre line. That's intentional and harmless.
-- **0.15 mm layers** (the wing skin is 3 layers, the tab 5), **100% infill**
-  (the CG was computed for solid PLA; sparse infill in the pod makes it
-  tail-heavy). Total print is small anyway.
-- The wing skin is thin and wide. Keep the plate clean and warm so the first
-  layer sticks; a 3 mm brim on the wings is cheap insurance against lifting.
+Two prints, because the fuselage and the wings want different infill. (You can
+do it as one plate with per-object settings instead: right-click an object →
+Add settings → Sparse infill density.)
+
+**Print 1: `glider_fuselage.stl`**
+- 0.15 mm layers, 2 walls, **100% infill**. The balance calculation assumes
+  a solid nose; sparse infill there makes it tail-heavy.
+- It prints lying on its side, as exported (fin flat on the plate), so the
+  slot widths are in-plane and come out to size. The boom and fin are flush
+  with the bed-side face, so the tail sits ~3.5 mm to one side of the wing
+  centre line. That's intentional and harmless.
+
+**Print 2: `glider_plate_wings.stl`** (both wings and the tailplane)
+- 0.15 mm layers, 2 walls, **10% gyroid infill**, **2 top and 2 bottom
+  layers**. The curved top skin is printed over the sparse infill like the top
+  of any normal part. The balance estimate assumes these numbers: 100% infill
+  here would add ~13 g and ruin it.
+- A 3 mm brim on the wings is cheap insurance against corners lifting.
+- Balance was estimated by `scripts/glider_cg.py`, which models the wing as
+  skins + walls + 10% infill rather than solid PLA.
 - 2 walls. Brim optional for the fuselage; the pod's footprint is fine on PEI.
 - Slots have 0.25 mm clearance over the tab/plate. If one is still tight,
   a couple of passes with a craft knife or a needle file opens it up.
@@ -84,9 +101,6 @@ Expected masses and balance points (100% infill PLA, from the model):
   and flatten.
 - Launch: hold the pod under the wing, throw gently level, slightly nose-down.
   With the lower wing loading it wants a gentle push, not a hard throw.
-- **Still too fast?** Camber helps flat plates a lot. Warm a wing half with a
-  hair dryer until it just softens, bow it gently so the top surface is convex
-  (2–3 mm rise at mid-chord), hold until cool. Do both sides the same.
 - The dihedral is held by the tab fit. Once both tips sit at the same height,
   a drop of PVA or CA at each root locks it.
 
