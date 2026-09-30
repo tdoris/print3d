@@ -33,3 +33,11 @@ parametric and version-controlled; exported STL/3MF files live alongside the sou
 | Bambu Studio        | `~/.local/opt/BambuStudio.AppImage` → `bambu-studio` | Slicer; also has a CLI (`bambu-studio --help`)|
 | admesh              | apt                                                  | STL sanity checks / repair                    |
 | Python venv         | `.venv/` (`requirements.txt`: trimesh, numpy-stl)    | Mesh inspection scripts                       |
+
+## Projects
+
+| Model           | Notes                                     |
+|-----------------|-------------------------------------------|
+| `celtic_ring`   | Woven band ring, UK size I ([docs](docs/celtic_ring.md)) |
+| `claddagh_ring` | Hands, heart and crown, UK size N ([docs](docs/claddagh_ring.md)) |
+| `glider`        | 188 mm chuck glider, push-fit ([docs](docs/glider.md)) |
