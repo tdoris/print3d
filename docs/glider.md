@@ -18,13 +18,35 @@ laid out for printing) plus `glider_fuselage.stl`, `glider_wing_r.stl`,
 
 ## How it goes together
 
-Four parts, push-fit, no glue needed (a dot of CA on the tabs is optional):
+![Exploded](images/glider_exploded.png)
+![Front view: dihedral](images/glider_front.png)
 
-1. Slide the tailplane through the slot in the boom, centre it.
-2. Push each wing half's root tab into its slot in the pod. The slots are cut at
-   6° dihedral and 2° incidence, so the angles are set by the fuselage.
+Four parts, push-fit, no glue needed (a dot of CA on the tabs is optional).
+Fuselage upright: fin up, flat edge down, round end forward.
+
+1. Slide the tailplane through the slot in the boom and centre it on the boom.
+2. Wing halves. Each is a wedge: 1 mm thick at one long edge, 0.5 mm at the
+   other, flat on one face. Orientation:
+   - **flat face down**, the stepped face up;
+   - **thick edge forward** (that's the leading edge), thin edge aft;
+   - the tab is nearer the thick edge: 4 mm behind it. It only fits the slot
+     one way lengthwise;
+   - push it in until the root touches the fuselage. Tips should angle **up**
+     (6° each side, see the front view). If the tips angle down, the wing is
+     upside down.
+   The slots are cut at 6° dihedral and 2° incidence, so the angles come from
+   the fuselage. The wing's leading edge ends up 4 mm ahead of the slot.
 3. Balance it on two fingertips under the wings: it should balance at the
-   notch. Nose-heavy is fine, tail-heavy is not.
+   notch, ~9 mm behind the wing's leading edge. Nose-heavy is fine, tail-heavy is not.
+
+Expected masses and balance points (100% infill PLA, from the model):
+
+| Part         | Mass  | Balance point, from the nose            |
+|--------------|-------|-----------------------------------------|
+| Fuselage     | 10.9 g| 56 mm (2 mm ahead of the wing slot)      |
+| Wing half    | 2.9 g | (per side)                              |
+| Tailplane    | 0.8 g |                                         |
+| **Complete** | 17.3 g| **63 mm, at the notch**                  |
 
 ## Print settings (P2S)
 

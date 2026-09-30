@@ -147,6 +147,14 @@ module fuselage_print() {
     translate([0, 0, pod_w / 2]) rotate([-90, 0, 0]) fuselage();
 }
 
+// Exploded view of the assembly, for the docs.
+module exploded() {
+    fuselage();
+    translate([0,  28, 0]) place_wing( 1) wing_half();
+    translate([0, -28, 0]) place_wing(-1) mirror([0, 1, 0]) wing_half();
+    translate([30, boom_y - tail_span / 2, 2.2 + slot_clear / 2]) tailplane();
+}
+
 module plate() {
     // Everything spanwise along X so the whole set fits in ~180 x 120 mm.
     fuselage_print();                                                            // y 0..25.5
@@ -157,6 +165,7 @@ module plate() {
 
 if (part == "plate")          plate();
 else if (part == "assembled") assembled();
+else if (part == "exploded")  exploded();
 else if (part == "fuselage")  fuselage_print();
 else if (part == "wing_r")    wing_half();
 else if (part == "wing_l")    mirror([0, 1, 0]) wing_half();
