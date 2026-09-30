@@ -29,11 +29,16 @@ Four parts, push-fit, no glue needed (a dot of CA on the tabs is optional):
 ## Print settings (P2S)
 
 - Import `glider_plate.stl`. Bambu Studio will ask to split it into objects; say yes.
-- **Fuselage prints standing up**, as laid out. Wings and tail print flat.
+- **Fuselage prints lying on its side**, as laid out (fin flat on the plate).
+  This keeps both slot widths in-plane, where the printer is accurate. An
+  earlier upright version bridged the slots and they closed up. The boom and
+  fin are flush with the bed-side face, so the tail sits ~3.5 mm to one side
+  of the wing centre line. That's intentional and harmless.
 - 0.2 mm layers, **100% infill** (the CG was computed for solid PLA; sparse
   infill in the pod makes it tail-heavy). Total print is small anyway.
 - 2 walls. Brim optional for the fuselage; the pod's footprint is fine on PEI.
-- The wing and tail slots are bridged; the printer handles the 2–4 mm spans.
+- Slots have 0.25 mm clearance over the tab/plate. If one is still tight,
+  a couple of passes with a craft knife or a needle file opens it up.
 - PLA. Avoid heavy, brittle "silk" PLA for the wings.
 
 ## Trimming
