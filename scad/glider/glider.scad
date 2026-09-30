@@ -6,8 +6,9 @@
 //                 bridged. Two angled slots for the wing halves (dihedral +
 //                 incidence), a through-slot for the tailplane, a nose
 //                 ballast pocket and a CG notch on top.
-//   * wing x2   - flat-bottomed wedge plates, printed flat. Root tab plugs
-//                 into the fuselage. Left half is a mirror of the right.
+//   * wing x2   - thin flat skin with two spanwise spars on top, printed
+//                 flat. Root tab plugs into the fuselage. Left half is a
+//                 mirror of the right.
 //   * tailplane - flat plate, slides through the boom.
 //
 // Set `part` to "plate" for the print layout, "assembled" to check the model,
@@ -15,48 +16,50 @@
 part = "plate";
 
 // ---- Wing -----------------------------------------------------------------
-half_span   = 90;      // per side, excluding the root tab
-root_chord  = 40;
-tip_chord   = 26;
-tip_round   = 4;       // corner radius at the tip
-t_le        = 1.0;     // wing thickness at the leading edge
-t_te        = 0.45;     // ... at the trailing edge (wedge section)
+half_span   = 125;     // per side, excluding the root tab
+root_chord  = 45;
+tip_chord   = 30;
+tip_round   = 5;       // corner radius at the tip
+skin_t      = 0.45;    // wing skin thickness (3 layers at 0.15 mm)
+spar_w      = 1.2;     // spanwise spars on the top surface
+spar_h      = 1.0;
+spar_at     = [0.22, 0.55];   // spar positions as fraction of root chord
 tab_len     = 4.0;     // root tab that goes into the fuselage (per side)
-tab_x0      = 4;       // tab runs from this chord station ...
-tab_x1      = 26;      // ... to this one
-tab_t       = 0.8;     // tab thickness
+tab_x0      = 5;       // tab runs from this chord station ...
+tab_x1      = 27;      // ... to this one
+tab_t       = 0.75;    // tab thickness (5 layers at 0.15 mm)
 dihedral    = 6;       // degrees per side
-incidence   = 2;       // wing angle relative to fuselage, degrees (LE up)
+incidence   = 3;       // wing angle relative to fuselage, degrees (LE up)
 slot_clear  = 0.25;    // extra slot thickness / length for a push fit
 
 // ---- Fuselage -------------------------------------------------------------
-x_le        = 54;      // wing leading edge position from the nose
-pod_len     = 84;      // solid nose pod, nose to where it starts tapering
-pod_w       = 9;
-pod_h       = 10;
-boom_w      = 2.0;
-boom_h0     = 5;       // boom height where it leaves the pod
-boom_h1     = 3.5;       // boom height at the tail
-fus_len     = 145;
-wing_z      = 7.8;     // height of the wing slot centre line above the bottom
+x_le        = 50;      // wing leading edge position from the nose
+pod_len     = 80;      // solid nose pod, nose to where it starts tapering
+pod_w       = 8;
+pod_h       = 9;
+boom_w      = 1.6;
+boom_h0     = 4.5;     // boom height where it leaves the pod
+boom_h1     = 3;       // boom height at the tail
+fus_len     = 142;
+wing_z      = 6.3;     // height of the wing slot centre line above the bottom
 ballast_d   = 5;       // nose pocket diameter (BBs / screw / clay for trimming), enters from the left side
 ballast_x   = 10;
 ballast_depth = 7;
 
 // ---- Tail -----------------------------------------------------------------
-tail_span   = 68;
-tail_root   = 18;
-tail_tip    = 13;
-tail_t      = 0.6;
-tail_x      = fus_len - 24;   // tailplane leading edge position
-fin_h       = 22;             // above the boom
-fin_w       = 1.2;
+tail_span   = 80;
+tail_root   = 20;
+tail_tip    = 15;
+tail_t      = 0.45;
+tail_x      = fus_len - 26;   // tailplane leading edge position
+fin_h       = 19;             // above the boom
+fin_w       = 0.8;
 
 // ---- Derived --------------------------------------------------------------
 boom_y  = pod_w / 2 - boom_w / 2;       // boom centre line (flush with the right side)
 lambda  = tip_chord / root_chord;
 mac     = 2 / 3 * root_chord * (1 + lambda + lambda * lambda) / (1 + lambda);
-cg_frac = 0.28;
+cg_frac = 0.32;
 x_cg    = x_le + cg_frac * mac;         // where the CG should end up
 echo(str("MAC = ", mac, " mm, target CG at x = ", x_cg, " mm from the nose"));
 
@@ -71,14 +74,13 @@ module rounded_planform(root, tip, span, r) {
 
 // Right wing half, flat side down, root at y = 0, LE at x = 0.
 module wing_half() {
-    // wedge section: thick at the LE, thin at the TE, over the root chord
-    intersection() {
-        linear_extrude(t_le) rounded_planform(root_chord, tip_chord, half_span, tip_round);
+    linear_extrude(skin_t) rounded_planform(root_chord, tip_chord, half_span, tip_round);
+    // spars: follow the local chord so they stay clear of the tip rounding
+    for (f = spar_at)
         hull() {
-            cube([0.01, half_span + 1, t_le]);
-            translate([root_chord, 0, 0]) cube([0.01, half_span + 1, t_te]);
+            translate([f * root_chord - spar_w / 2, 0, 0]) cube([spar_w, 0.01, skin_t + spar_h]);
+            translate([f * tip_chord - spar_w / 2, half_span - tip_round - 1, 0]) cube([spar_w, 0.01, skin_t + spar_h]);
         }
-    }
     // root tab
     translate([tab_x0, -tab_len, 0]) cube([tab_x1 - tab_x0, tab_len + 0.5, tab_t]);
 }
@@ -92,12 +94,13 @@ module tailplane() {
             }
 }
 
-// Transform that places the right wing half onto the fuselage.
+// Transform that places a wing half (or its slot cutter) onto the fuselage.
+// The wing's root rib ends up on the pod's side face; the tab goes inward.
 module place_wing(side = 1) {
     // pivot: middle of the tab, on the fuselage centre line, at wing height
     translate([x_le + (tab_x0 + tab_x1) / 2, 0, wing_z])
         rotate([side * dihedral, 0, 0]) rotate([0, incidence, 0])
-            translate([-(tab_x0 + tab_x1) / 2, 0, -tab_t / 2])
+            translate([-(tab_x0 + tab_x1) / 2, side * pod_w / 2, -tab_t / 2])
                 children();
 }
 
@@ -119,11 +122,11 @@ module fuselage() {
                 polygon([[fus_len - 34, 0], [fus_len, 0], [fus_len, boom_h1 + fin_h],
                          [fus_len - 12, boom_h1 + fin_h]]);
         }
-        // wing slots (angled for dihedral and incidence)
+        // wing slots (angled for dihedral and incidence), open at the side face
         for (side = [-1, 1])
             place_wing(side)
-                translate([tab_x0 - slot_clear, side > 0 ? -0.5 : -pod_w / 2 - 1, -slot_clear / 2])
-                    cube([tab_x1 - tab_x0 + 2 * slot_clear, pod_w / 2 + 0.5 + 1 - 0.8, tab_t + slot_clear]);
+                translate([tab_x0 - slot_clear, side > 0 ? -tab_len - 0.5 : -2, -slot_clear / 2])
+                    cube([tab_x1 - tab_x0 + 2 * slot_clear, tab_len + 2.5, tab_t + slot_clear]);
         // tailplane slot
         translate([tail_x - slot_clear, -5, 2.2])
             cube([tail_root + 2 * slot_clear, 10, tail_t + slot_clear]);
@@ -158,9 +161,9 @@ module exploded() {
 module plate() {
     // Everything spanwise along X so the whole set fits in ~180 x 120 mm.
     fuselage_print();                                                            // y 0..25.5
-    translate([10, 72, 0])   rotate([0, 0, -90]) wing_half();                   // right wing, y 32..72
-    translate([100, -8, 0])  rotate([0, 0, -90]) mirror([0, 1, 0]) wing_half(); // left wing, y -48..-8
-    translate([110, 72, 0])  rotate([0, 0, -90]) tailplane();                   // y 54..72
+    translate([5, 78, 0])    rotate([0, 0, -90]) wing_half();                   // right wing, y 33..78
+    translate([131, -8, 0])  rotate([0, 0, -90]) mirror([0, 1, 0]) wing_half(); // left wing, y -53..-8
+    translate([142, 78, 0])  rotate([0, 0, -90]) tailplane();                   // y 58..78
 }
 
 if (part == "plate")          plate();
