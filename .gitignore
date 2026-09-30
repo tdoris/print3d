@@ -1,0 +1,10 @@
+# OpenSCAD / slicer outputs are regenerated from source; keep sources, not build artefacts
+build/
+*.gcode
+*.3mf.bak
+*.log
+*.tmp
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
