@@ -139,10 +139,11 @@ module assembled() {
 }
 
 module plate() {
+    // Everything spanwise along X so the whole set fits in ~180 x 110 mm.
     fuselage();
-    translate([0, 40, 0]) wing_half();
-    translate([0, -40, 0]) mirror([0, 1, 0]) wing_half();
-    translate([110, 40, 0]) tailplane();
+    translate([10, 55, 0])   rotate([0, 0, -90]) wing_half();                   // right wing, y 15..55
+    translate([100, -15, 0]) rotate([0, 0, -90]) mirror([0, 1, 0]) wing_half(); // left wing, y -55..-15
+    translate([110, 55, 0])  rotate([0, 0, -90]) tailplane();                   // y 37..55
 }
 
 if (part == "plate")          plate();
