@@ -11,7 +11,7 @@
 //    drip_slope so nothing overhangs more than ~40 deg. Top edges stay crisp.
 
 // ---- Size -----------------------------------------------------------------
-ring_size_mm = 15.49;    // UK "I"
+ring_size_mm = 17.53;    // UK "N" (I=15.49 J=15.90 K=16.31 L=16.71 M=17.12 N=17.53 O=17.93)
 clearance    = 0.30;     // FDM hole shrink compensation
 inner_d      = ring_size_mm + clearance;
 

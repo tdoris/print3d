@@ -13,7 +13,7 @@ heart and crown are plain coordinates near the top of the file.
 
 | Parameter        | Value                                             |
 |------------------|---------------------------------------------------|
-| Size             | UK I (15.49 mm) + 0.3 mm clearance = 15.8 mm bore |
+| Size             | UK N (17.53 mm) + 0.3 mm clearance = 17.83 mm bore |
 | Band             | 12 mm wide at the top, 8 mm at the hands, 5 mm at the back, 1.5 mm thick |
 | Relief           | 0.7–1.7 mm above the band                         |
 | Volume           | ~0.75 cm³                                         |
