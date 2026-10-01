@@ -5,7 +5,7 @@
 // ---- Size -----------------------------------------------------------------
 // UK ring sizes, inner diameter in mm (Bambu/FDM holes come out slightly
 // undersize, so a small clearance is added below).
-ring_size_mm  = 15.49;   // UK "I"
+ring_size_mm  = 15.49;   // UK "I"  (I=15.49 J=15.90 K=16.31 L=16.71 M=17.12 N=17.53 O=17.93 P=18.34 Q=18.75 R=19.15 S=19.56 T=19.96)
 clearance     = 0.30;    // FDM hole shrink compensation
 inner_d       = ring_size_mm + clearance;
 
@@ -15,11 +15,20 @@ band_width    = 6.0;     // overall height of the ring
 rim_h         = 0.8;     // small rims at the top/bottom edges
 rim_thick     = 0.5;     // how far the rims stand proud of the base band
 
+
 // ---- Weave ----------------------------------------------------------------
 crossings     = 8;       // number of over/under crossings around the ring
 strand_r      = 0.75;    // radius of each strand (tube)
 weave_depth   = 0.45;    // radial in/out movement (gives the over/under)
 steps         = 240;     // segments around the ring
+
+// ---- Wavy top edge --------------------------------------------------------
+// The top rim rises and falls around the ring, one crest over each place a
+// strand of the braid peaks, so the edge follows the weave.
+wavy_top      = false;
+wave_amp      = 0.55;    // half the peak-to-trough height of the wave (mm)
+wave_n        = crossings;   // one wave per crossing; 2 * crossings hugs every strand peak but looks like a crown
+wave_phase    = 0;       // degrees; 0 puts crests over the peaks of the first strand
 
 $fn = 16;
 
@@ -42,20 +51,41 @@ module strand(phase) {
     }
 }
 
+// Height of the top edge above the ring's mid-plane, at angle t
+function top_z(t) = band_width / 2 + (wavy_top ? wave_amp * sin(wave_n * t + wave_phase) : 0);
+
 module base_band() {
-    difference() {
-        cylinder(h = band_width, r = band_r, center = true, $fn = 180);
-        cylinder(h = band_width + 1, r = inner_r, center = true, $fn = 180);
+    // stops just under the top rim; the rim fills the rest, wavy or not
+    z0 = -band_width / 2;
+    z1 = band_width / 2 - rim_h - (wavy_top ? wave_amp : 0);
+    translate([0, 0, z0]) difference() {
+        cylinder(h = z1 - z0, r = band_r, $fn = 180);
+        translate([0, 0, -0.5]) cylinder(h = z1 - z0 + 1, r = inner_r, $fn = 180);
     }
 }
 
+module bottom_rim() {
+    translate([0, 0, -band_width / 2]) difference() {
+        cylinder(h = rim_h, r = band_r + rim_thick, $fn = 180);
+        translate([0, 0, -0.5]) cylinder(h = rim_h + 1, r = inner_r, $fn = 180);
+    }
+}
+
+// Top rim as a ring of hulled wedges so its top edge can follow top_z(t).
+module top_rim() {
+    z0 = band_width / 2 - rim_h - (wavy_top ? wave_amp : 0) - 0.01;
+    n = 180;
+    module plate(t) {
+        rotate([0, 0, t]) translate([inner_r, 0, z0])
+            cube([band_r + rim_thick - inner_r, 0.01, top_z(t) - z0]);
+    }
+    for (i = [0 : n - 1])
+        hull() { plate(360 * i / n); plate(360 * (i + 1) / n); }
+}
+
 module rims() {
-    for (s = [-1, 1])
-        translate([0, 0, s * (band_width / 2 - rim_h / 2)])
-            difference() {
-                cylinder(h = rim_h, r = band_r + rim_thick, center = true, $fn = 180);
-                cylinder(h = rim_h + 1, r = inner_r, center = true, $fn = 180);
-            }
+    bottom_rim();
+    top_rim();
 }
 
 module ring() {
@@ -67,3 +97,4 @@ module ring() {
 
 // Sit the ring on the build plate
 translate([0, 0, band_width / 2]) ring();
+echo(str("bore ", inner_d, " mm, height ", band_width + (wavy_top ? wave_amp : 0), " mm"));
