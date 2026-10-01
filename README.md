@@ -40,4 +40,4 @@ parametric and version-controlled; exported STL/3MF files live alongside the sou
 |-----------------|-------------------------------------------|
 | `celtic_ring`   | Woven band ring, UK size I ([docs](docs/celtic_ring.md)) |
 | `claddagh_ring` | Hands, heart and crown, UK size N ([docs](docs/claddagh_ring.md)) |
-| `glider`        | 268 mm chuck glider with a cambered wing, push-fit ([docs](docs/glider.md)) |
+| `glider`        | 387 mm glider with a cambered wing, push-fit ([docs](docs/glider.md)) |

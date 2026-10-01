@@ -17,49 +17,59 @@
 part = "plate";
 
 // ---- Wing -----------------------------------------------------------------
-half_span   = 130;     // per side, excluding the root tab
-root_chord  = 48;
-tip_chord   = 30;
+half_span   = 190;     // per side, excluding the root tab
+root_chord  = 52;
+tip_chord   = 34;
 tip_round   = 5;       // corner radius at the tip
-foil_t      = 0.06;    // section thickness / chord (flat bottom, all camber on top)
-foil_base   = 0.3;     // minimum thickness at the leading and trailing edges
+foil_t      = 0.055;   // section thickness / chord (flat bottom, all camber on top)
+foil_base   = 0.25;    // minimum thickness at the leading and trailing edges
 foil_n      = 40;      // points along the upper surface
 tab_len     = 4.0;     // root tab that goes into the fuselage (per side)
 tab_x0      = 5;       // tab runs from this chord station ...
-tab_x1      = 27;      // ... to this one
-tab_t       = 0.75;    // tab thickness (5 layers at 0.15 mm)
+tab_x1      = 29;      // ... to this one
+tab_t       = 0.7;     // tab thickness (7 layers at 0.1 mm)
 dihedral    = 6;       // degrees per side
-incidence   = 2;       // wing angle relative to fuselage, degrees (LE up)
+incidence   = 2.5;     // wing angle relative to fuselage, degrees (LE up)
 slot_clear  = 0.25;    // extra slot thickness / length for a push fit
 
 // ---- Fuselage -------------------------------------------------------------
-x_le        = 50;      // wing leading edge position from the nose
-pod_len     = 80;      // solid nose pod, nose to where it starts tapering
-pod_w       = 8;
-pod_h       = 10;
-boom_w      = 1.6;
-boom_h0     = 4.5;     // boom height where it leaves the pod
-boom_h1     = 3;       // boom height at the tail
-fus_len     = 142;
-wing_z      = 6.3;     // height of the wing slot centre line above the bottom
-ballast_d   = 5;       // nose pocket diameter (BBs / screw / clay for trimming), enters from the left side
-ballast_x   = 10;
-ballast_depth = 7;
+// Nose block -- thin front boom -- wing pod -- thin rear boom + fin.
+// The nose block is the balance weight; putting it on a boom gives it
+// leverage so less of it is needed.
+x_le        = 80;      // wing leading edge position from the nose
+nose_len    = 22;      // solid nose block
+nose_h      = 10;
+fboom_h     = 6;       // front boom height (full width, so it is stiff in the print)
+fboom_w     = 2.4;
+pod_x0      = x_le - 6;
+pod_len     = 40;      // wing pod, holds the slots
+pod_w       = 7;
+pod_h       = 9.5;
+boom_w      = 1.4;
+boom_h0     = 3.5;     // rear boom height where it leaves the pod
+boom_h1     = 2.5;     // rear boom height at the tail
+fus_len     = 196;
+wing_z      = 6.0;     // height of the wing slot centre line above the bottom
+ballast_d   = 4.5;     // nose pocket diameter (BBs / screw / clay for trimming), enters from the left side
+ballast_x   = 9;
+ballast_depth = 5.5;
 
 // ---- Tail -----------------------------------------------------------------
-tail_span   = 80;
+tail_span   = 110;
 tail_root   = 20;
-tail_tip    = 15;
-tail_t      = 0.45;
+tail_tip    = 14;
+tail_t      = 0.3;            // 3 layers at 0.1 mm
+tail_inc    = -1;             // tailplane incidence, degrees (negative = LE down = nose-up trim)
 tail_x      = fus_len - 26;   // tailplane leading edge position
-fin_h       = 19;             // above the boom
-fin_w       = 0.8;
+fin_h       = 16;             // above the boom
+fin_w       = 0.6;
 
 // ---- Derived --------------------------------------------------------------
-boom_y  = pod_w / 2 - boom_w / 2;       // boom centre line (flush with the right side)
+boom_y  = pod_w / 2 - boom_w / 2;       // rear boom centre line (flush with the right side)
+tail_z  = 2.0;                           // tailplane slot height above the bottom
 lambda  = tip_chord / root_chord;
 mac     = 2 / 3 * root_chord * (1 + lambda + lambda * lambda) / (1 + lambda);
-cg_frac = 0.32;
+cg_frac = 0.30;
 x_cg    = x_le + cg_frac * mac;         // where the CG should end up
 echo(str("MAC = ", mac, " mm, target CG at x = ", x_cg, " mm from the nose"));
 
@@ -117,34 +127,41 @@ module place_wing(side = 1) {
                 children();
 }
 
+// A side-profile polygon extruded to width w, flush with the right-hand face
+// of the fuselage (y = +pod_w/2), which is the face that lies on the plate.
+module slab(w) {
+    translate([0, pod_w / 2 - w / 2, 0]) rotate([90, 0, 0]) linear_extrude(w, center = true) children();
+}
+
 module fuselage() {
     difference() {
         union() {
-            // pod: rounded nose, flat bottom, tapering into the boom
-            rotate([90, 0, 0]) linear_extrude(pod_w, center = true)
-                hull() {
-                    translate([pod_h / 2, pod_h / 2]) circle(pod_h / 2);
-                    translate([pod_h / 2, 0]) square([pod_len - pod_h / 2, pod_h]);
-                    translate([pod_len + 12, 0]) square([0.1, boom_h0]);
-                }
-            // boom and fin, flush with the right side of the pod (the side that
-            // lies on the build plate) so nothing floats when printed
-            translate([0, boom_y, 0]) rotate([90, 0, 0]) linear_extrude(boom_w, center = true)
-                polygon([[pod_len, 0], [fus_len, 0], [fus_len, boom_h1], [pod_len, boom_h0]]);
-            translate([0, pod_w / 2 - fin_w / 2, 0]) rotate([90, 0, 0]) linear_extrude(fin_w, center = true)
-                polygon([[fus_len - 34, 0], [fus_len, 0], [fus_len, boom_h1 + fin_h],
-                         [fus_len - 12, boom_h1 + fin_h]]);
+            // nose block, rounded front
+            slab(pod_w) hull() {
+                translate([nose_h / 2, nose_h / 2]) circle(nose_h / 2);
+                translate([nose_h / 2, 0]) square([nose_len - nose_h / 2, nose_h]);
+            }
+            // front boom
+            slab(fboom_w) translate([nose_len - 1, 0]) square([pod_x0 - nose_len + 2, fboom_h]);
+            // wing pod, tapering into the rear boom
+            slab(pod_w) polygon([[pod_x0, 0], [pod_x0 + pod_len + 10, 0], [pod_x0 + pod_len + 10, boom_h0],
+                                 [pod_x0 + pod_len, pod_h], [pod_x0, pod_h]]);
+            // rear boom and fin
+            slab(boom_w) polygon([[pod_x0 + pod_len, 0], [fus_len, 0], [fus_len, boom_h1], [pod_x0 + pod_len, boom_h0]]);
+            slab(fin_w) polygon([[fus_len - 30, 0], [fus_len, 0], [fus_len, boom_h1 + fin_h],
+                                 [fus_len - 10, boom_h1 + fin_h]]);
         }
         // wing slots (angled for dihedral and incidence), open at the side face
         for (side = [-1, 1])
             place_wing(side)
                 translate([tab_x0 - slot_clear, side > 0 ? -tab_len - 0.5 : -2, -slot_clear / 2])
                     cube([tab_x1 - tab_x0 + 2 * slot_clear, tab_len + 2.5, tab_t + slot_clear]);
-        // tailplane slot
-        translate([tail_x - slot_clear, -5, 2.2])
-            cube([tail_root + 2 * slot_clear, 10, tail_t + slot_clear]);
+        // tailplane slot, with its incidence
+        translate([tail_x + tail_root / 2, 0, tail_z]) rotate([0, -tail_inc, 0])
+            translate([-tail_root / 2 - slot_clear, -5, -slot_clear / 2])
+                cube([tail_root + 2 * slot_clear, 10, tail_t + slot_clear]);
         // ballast pocket: blind hole from the left side (the top face when printed)
-        translate([ballast_x, -pod_w / 2 + ballast_depth, pod_h / 2]) rotate([90, 0, 0])
+        translate([ballast_x, -pod_w / 2 + ballast_depth, nose_h / 2]) rotate([90, 0, 0])
             cylinder(d = ballast_d, h = 20);
         // CG notch on top of the pod
         translate([x_cg, 0, pod_h]) rotate([0, 45, 0]) cube([1.4, pod_w + 2, 1.4], center = true);
@@ -155,7 +172,8 @@ module assembled() {
     fuselage();
     place_wing( 1) wing_half();
     place_wing(-1) mirror([0, 1, 0]) wing_half();
-    translate([tail_x, boom_y - tail_span / 2, 2.2 + slot_clear / 2]) tailplane();
+    translate([tail_x + tail_root / 2, 0, tail_z]) rotate([0, -tail_inc, 0])
+        translate([-tail_root / 2, boom_y - tail_span / 2, -tail_t / 2]) tailplane();
 }
 
 // Fuselage in its print orientation: lying on its right side, fin flat.
@@ -168,22 +186,22 @@ module exploded() {
     fuselage();
     translate([0,  28, 0]) place_wing( 1) wing_half();
     translate([0, -28, 0]) place_wing(-1) mirror([0, 1, 0]) wing_half();
-    translate([30, boom_y - tail_span / 2, 2.2 + slot_clear / 2]) tailplane();
+    translate([30 + tail_x, boom_y - tail_span / 2, tail_z]) tailplane();
 }
 
 // Wings and tailplane only (they use different slicer settings to the fuselage).
 module plate_wings() {
-    translate([5, 48, 0])    rotate([0, 0, -90]) wing_half();                   // right wing, y 0..48
-    translate([136, -8, 0])  rotate([0, 0, -90]) mirror([0, 1, 0]) wing_half(); // left wing, y -56..-8
-    translate([142, 48, 0])  rotate([0, 0, -90]) tailplane();                   // y 28..48
+    translate([5, 52, 0])    rotate([0, 0, -90]) wing_half();                   // right wing, y 0..52
+    translate([199, -8, 0])  rotate([0, 0, -90]) mirror([0, 1, 0]) wing_half(); // left wing, y -60..-8
+    translate([5, 82, 0])    rotate([0, 0, -90]) tailplane();                   // y 62..82
 }
 
 module plate() {
     // Everything spanwise along X so the whole set fits in ~180 x 120 mm.
-    fuselage_print();                                                            // y 0..25.5
-    translate([5, 81, 0])    rotate([0, 0, -90]) wing_half();                   // right wing, y 33..81
-    translate([136, -8, 0])  rotate([0, 0, -90]) mirror([0, 1, 0]) wing_half(); // left wing, y -56..-8
-    translate([142, 81, 0])  rotate([0, 0, -90]) tailplane();                   // y 61..81
+    fuselage_print();                                                            // y 0..19
+    translate([5, 80, 0])    rotate([0, 0, -90]) wing_half();                   // right wing, y 28..80
+    translate([199, -8, 0])  rotate([0, 0, -90]) mirror([0, 1, 0]) wing_half(); // left wing, y -60..-8
+    translate([5, 110, 0])   rotate([0, 0, -90]) tailplane();                   // y 90..110
 }
 
 if (part == "plate")          plate();
@@ -193,7 +211,7 @@ else if (part == "plate_wings") plate_wings();
 // assembled-position single parts, for the balance estimate in scripts/glider_cg.py
 else if (part == "asm_fuselage") fuselage();
 else if (part == "asm_wings") { place_wing(1) wing_half(); place_wing(-1) mirror([0, 1, 0]) wing_half(); }
-else if (part == "asm_tail")  translate([tail_x, boom_y - tail_span / 2, 2.2 + slot_clear / 2]) tailplane();
+else if (part == "asm_tail")  translate([tail_x, boom_y - tail_span / 2, tail_z]) tailplane();
 else if (part == "fuselage")  fuselage_print();
 else if (part == "wing_r")    wing_half();
 else if (part == "wing_l")    mirror([0, 1, 0]) wing_half();

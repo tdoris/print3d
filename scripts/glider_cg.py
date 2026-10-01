@@ -11,11 +11,11 @@ import re, subprocess, sys, tempfile, os
 import trimesh, numpy as np
 
 RHO = 1.24            # g/cm3, PLA
-LAYER = 0.15          # mm
+LAYER = 0.10          # mm
 TOP, BOTTOM = 2, 2    # solid layers on the wing
 WALLS = 2             # perimeters
 LINE = 0.42           # mm line width
-INFILL = 0.10         # sparse infill density on the wing
+INFILL = 0.06         # sparse infill density on the wing
 
 root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 scad = os.path.join(root, "scad/glider/glider.scad")
@@ -39,7 +39,8 @@ with tempfile.TemporaryDirectory() as d:
     planform = wings.area / 2 * 0.98   # top + bottom faces dominate the surface
     skins = planform * (TOP + BOTTOM) * LAYER / 1000            # cm3
     walls = 0.35 * (wings.volume / 1000) * 0                    # negligible on a thin section
-    outline = 2 * (2 * 130 + 48 + 30)                           # mm, both halves
+    ext = wings.extents
+    outline = 2 * (2 * ext[1] / 2 + 2 * ext[0])                  # mm, both halves (approx)
     walls = outline * WALLS * LINE * 1.2 / 1000                  # ~1.2 mm mean wall height
     interior = max(wings.volume / 1000 - skins - walls, 0)
     m_wing = RHO * (skins + walls + interior * INFILL)
@@ -49,4 +50,4 @@ with tempfile.TemporaryDirectory() as d:
     cg = (m_fus * fus.center_mass + m_wing * wings.center_mass + m_tail * tail.center_mass) / m
     print(f"fuselage {m_fus:5.1f} g   wings {m_wing:5.1f} g (solid would be {RHO*wings.volume/1000:.1f})   tail {m_tail:4.1f} g")
     print(f"total {m:5.1f} g   CG x = {cg[0]:.1f} mm   target {tgt:.1f}   delta {cg[0]-tgt:+.1f} mm")
-    print(f"wing area ~{planform/100:.0f} cm2   loading {m/(planform/100):.3f} g/cm2")
+    print(f"wing area ~{planform/100:.0f} cm2   loading {m/(planform/100):.3f} g/cm2   (LW-PLA at 0.5 g/cm3: ~{m*0.5/RHO/(planform/100):.3f})")
