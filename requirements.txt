@@ -2,3 +2,5 @@ trimesh
 numpy
 numpy-stl
 networkx
+scipy
+rtree
